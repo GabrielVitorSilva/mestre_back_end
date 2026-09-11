@@ -1,4 +1,4 @@
-# Mestre — BE-001
+# Mestre — BE-001 e BE-002
 
 Base local mínima da API do Mestre. Nesta etapa, a única rota exposta é a saúde:
 
@@ -6,40 +6,39 @@ Base local mínima da API do Mestre. Nesta etapa, a única rota exposta é a sa�
 
 ## Pré-requisito
 
-Java 25 LTS deve estar disponível no `PATH`. O projeto usa o Maven Wrapper fixado em Maven 3.9.16; não é necessário instalar Maven globalmente.
-
-## Verificação
-
-```sh
-./mvnw -v
-./mvnw verify
-java -jar target/mestre-0.0.1-SNAPSHOT.jar
-```
-
-Em outro terminal, verifique a saúde:
-
-```sh
-curl --fail http://127.0.0.1:8080/actuator/health
-```
-
-O resultado esperado é HTTP `200`, com o campo `status` igual a `UP` e sem um campo `details`. O corpo pode incluir indicadores de grupos de saúde; não dependa de uma estrutura JSON exata. As rotas `/actuator`, `/actuator/info`, `/actuator/metrics` e `/actuator/env` devem responder `404`.
+Docker Desktop (ou Docker Engine com Docker Compose) deve estar disponível. Não é necessário instalar Java ou Maven no macOS.
 
 ## Docker
 
-Docker permite executar a aplicação com Java 25 sem alterar a versão de Java instalada no macOS. Para construir a imagem e iniciar o serviço, execute:
+Docker Compose inicia a aplicação e um PostgreSQL local. Para construir a imagem e iniciar os serviços, execute:
 
 ```sh
-docker compose up --build
+docker compose up --build -d
 ```
 
-Em outro terminal, consulte a saúde:
+O PostgreSQL não publica nenhuma porta no host: ele só pode ser acessado pela rede interna do Compose. A aplicação aguarda o healthcheck do banco antes de iniciar e usa credenciais exclusivamente locais de desenvolvimento. O Flyway estabelece o schema técnico `mestre`; esta etapa não cria tabelas de negócio.
+
+Consulte os logs da aplicação e, em seguida, a saúde:
 
 ```sh
+docker compose logs app
 curl -i http://127.0.0.1:8080/actuator/health
 ```
 
-O serviço é publicado somente no loopback (`127.0.0.1`). Para pará-lo e remover os recursos criados pelo Compose:
+O resultado esperado é HTTP `200`, com o campo `status` igual a `UP` e sem `details`. As rotas `/actuator`, `/actuator/info`, `/actuator/metrics` e `/actuator/env` continuam respondendo `404`.
+
+Para encerrar os serviços e remover os contêineres e a rede do Compose:
 
 ```sh
 docker compose down
 ```
+
+## Testes de integração
+
+Execute a suíte completa com Java 25 e Testcontainers usando o serviço temporário de desenvolvimento:
+
+```sh
+docker compose --profile test run --rm test
+```
+
+Esse serviço monta o projeto como diretório de trabalho e o socket Docker exclusivamente para que o Testcontainers inicie um PostgreSQL isolado. Ele não expõe portas, não depende do PostgreSQL do Compose e não usa credenciais reais. A imagem da aplicação executa somente o empacotamento durante o build; os testes continuam obrigatórios neste comando de verificação.

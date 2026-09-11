@@ -1,8 +1,47 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: mestre
+      POSTGRES_USER: mestre
+      POSTGRES_PASSWORD: mestre_local_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     command: ["--server.address=0.0.0.0"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/mestre
+      DATABASE_USERNAME: mestre
+      DATABASE_PASSWORD: mestre_local_password
     ports:
       - "127.0.0.1:8080:8080"
+
+  test:
+    image: eclipse-temurin:25-jdk
+    profiles: ["test"]
+    working_dir: /workspace
+    command: ["./mvnw", "clean", "verify"]
+    environment:
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  postgres-data:

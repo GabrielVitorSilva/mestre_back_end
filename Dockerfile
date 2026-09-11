@@ -7,7 +7,7 @@ COPY .mvn/ .mvn/
 RUN chmod +x mvnw
 
 COPY src/ src/
-RUN ./mvnw clean verify
+RUN ./mvnw clean package -DskipTests
 RUN cp target/mestre-0.0.1-SNAPSHOT.jar /tmp/application.jar
 
 FROM eclipse-temurin:25-jre
