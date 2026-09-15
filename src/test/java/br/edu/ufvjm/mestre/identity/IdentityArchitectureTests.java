@@ -15,8 +15,13 @@ class IdentityArchitectureTests {
 
     @Test
     void allExpectedBoundariesActuallyExist() {
-        for (String boundary : new String[]{"domain", "application", "adapter.http", "adapter.persistence", "adapter.password", "configuration"}) {
-            assertTrue(CODE.stream().anyMatch(c -> c.getPackageName().equals("br.edu.ufvjm.mestre.identity." + boundary)), boundary);
+        for (String boundary : new String[]{
+                "domain.account", "domain.registration", "application.account", "application.password",
+                "application.registration", "adapter.http.registration", "adapter.persistence.account",
+                "adapter.password", "configuration"}) {
+            String packageName = "br.edu.ufvjm.mestre.identity." + boundary;
+            assertTrue(CODE.stream().anyMatch(c -> c.getPackageName().equals(packageName)
+                    || c.getPackageName().startsWith(packageName + ".")), boundary);
         }
     }
     @Test
